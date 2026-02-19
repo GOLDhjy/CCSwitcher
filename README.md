@@ -72,32 +72,36 @@ ccswitcher add \
 ccswitcher remove glm-work
 ```
 
-## Install (source checkout)
-
-```bash
-bash scripts/install.sh
-```
-
-This installs:
-
-- `~/.local/bin/ccswitcher`
-- `/switchmodel` slash command template in `~/.claude/commands/switchmodel.md`
-
-## Install (one-line for others)
-
-Using Cargo + git (single shell command):
-
-```bash
-cargo install --git https://github.com/GOLDhjy/CCSwitcher.git ccswitcher --force && ccswitcher install
-```
-
-Using remote install script (single shell command):
+## Install (recommended, no Rust required)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/main/scripts/install.sh | bash
 ```
 
-After that, use in Claude Code:
+This downloads the latest prebuilt release binary for your platform, then installs:
+
+- `~/.local/bin/ccswitcher`
+- `/switchmodel` slash command template in `~/.claude/commands/switchmodel.md`
+
+Install a specific release tag:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/main/scripts/install.sh | bash -s -- --version v0.1.0
+```
+
+If binary install is unavailable for your platform, use source mode:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/main/scripts/install.sh | bash -s -- --source
+```
+
+## Install (local source checkout)
+
+```bash
+bash scripts/install.sh --source
+```
+
+After installation, use in Claude Code:
 
 - `/switchmodel list`
 - `/switchmodel current`
