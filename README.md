@@ -1,5 +1,7 @@
 # CCSwitcher
 
+[中文说明](./README.zh-CN.md)
+
 `ccswitcher` is a Rust CLI for Claude Code model preset management.
 
 It powers a global slash command `/switchmodel` with subcommands:
@@ -10,6 +12,8 @@ It powers a global slash command `/switchmodel` with subcommands:
 - `add`
 - `remove <preset>`
 - `reset` (alias of `reset-official`)
+
+By default, new installs start with an empty preset list (no built-in provider preset).
 
 ## What it changes
 
@@ -51,9 +55,11 @@ CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/ccswitcher-target cargo build --releas
 ## CLI usage
 
 ```bash
+# no args -> interactive terminal wizard/menu
+ccswitcher
+
 ccswitcher list
 ccswitcher current
-ccswitcher use glm
 ccswitcher reset-official
 
 ccswitcher add \

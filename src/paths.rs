@@ -10,6 +10,7 @@ pub struct AppPaths {
     pub config_path: PathBuf,
     pub claude_home: PathBuf,
     pub settings_path: PathBuf,
+    pub settings_local_path: PathBuf,
 }
 
 impl AppPaths {
@@ -18,6 +19,7 @@ impl AppPaths {
         let claude_home = resolve_home_path("CLAUDE_HOME", ".claude")?;
         let config_path = ccswitcher_home.join("config.json");
         let settings_path = claude_home.join("settings.json");
+        let settings_local_path = claude_home.join("settings.local.json");
 
         fsutil::ensure_directory(&ccswitcher_home)?;
         fsutil::ensure_directory(&claude_home)?;
@@ -26,6 +28,7 @@ impl AppPaths {
             config_path,
             claude_home,
             settings_path,
+            settings_local_path,
         })
     }
 }

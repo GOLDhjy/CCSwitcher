@@ -247,7 +247,10 @@ fn install_writes_switchmodel_command_file() {
         .args(["install"])
         .assert()
         .success()
-        .stdout(contains("Installed slash command:"));
+        .stdout(contains("Installed slash command:"))
+        .stdout(contains(
+            "Ensured local permission rule: Bash(ccswitcher:*)",
+        ));
 
     let command_file = claude_home.join("commands/switchmodel.md");
     let body = fs::read_to_string(command_file).expect("read command");
@@ -257,4 +260,17 @@ fn install_writes_switchmodel_command_file() {
         )
     );
     assert!(body.contains("ccswitcher reset-official"));
+
+    let local_settings =
+        fs::read_to_string(claude_home.join("settings.local.json")).expect("read local settings");
+    let parsed: Value = serde_json::from_str(&local_settings).expect("settings local json");
+    let allow = parsed["permissions"]["allow"]
+        .as_array()
+        .expect("permissions.allow array");
+    assert!(
+        allow
+            .iter()
+            .any(|v| v.as_str() == Some("Bash(ccswitcher:*)")),
+        "expected Bash(ccswitcher:*) allow rule"
+    );
 }

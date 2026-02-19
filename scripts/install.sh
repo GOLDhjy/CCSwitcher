@@ -7,7 +7,26 @@ VERSION="${CCSWITCHER_VERSION:-latest}"
 MODE="binary"
 BIN_DIR="${INSTALL_BIN_DIR:-$HOME/.local/bin}"
 TARGET_DIR="${CARGO_TARGET_DIR:-/tmp/ccswitcher-target}"
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd 2>/dev/null || true)"
+SCRIPT_SOURCE="${BASH_SOURCE[0]-$0}"
+ROOT_DIR=""
+TMP_DIRS=()
+
+cleanup_tmp_dirs() {
+  local dir
+  for dir in "${TMP_DIRS[@]-}"; do
+    [[ -n "$dir" && -d "$dir" ]] && rm -rf "$dir"
+  done
+}
+
+register_tmp_dir() {
+  TMP_DIRS+=("$1")
+}
+
+trap cleanup_tmp_dirs EXIT
+
+if [[ "$SCRIPT_SOURCE" != "bash" && "$SCRIPT_SOURCE" != "-" ]]; then
+  ROOT_DIR="$(cd "$(dirname "$SCRIPT_SOURCE")/.." && pwd 2>/dev/null || true)"
+fi
 
 usage() {
   cat <<'USAGE'
@@ -92,7 +111,7 @@ install_from_binary() {
   base_url="https://github.com/$GITHUB_REPO/releases/download/$tag"
 
   tmp_dir="$(mktemp -d)"
-  trap 'rm -rf "$tmp_dir"' EXIT
+  register_tmp_dir "$tmp_dir"
 
   echo "Downloading release ${tag} (${target})..."
   asset_file="$tmp_dir/$asset"
@@ -139,7 +158,7 @@ install_from_source() {
     source_root="$ROOT_DIR"
   else
     tmp_dir="$(mktemp -d)"
-    trap 'rm -rf "$tmp_dir"' EXIT
+    register_tmp_dir "$tmp_dir"
     echo "Cloning repository: $REPO_URL"
     git clone --depth 1 "$REPO_URL" "$tmp_dir/CCSwitcher"
     source_root="$tmp_dir/CCSwitcher"

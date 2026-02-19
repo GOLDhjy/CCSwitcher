@@ -10,7 +10,6 @@ use crate::{
 };
 
 const CURRENT_CONFIG_VERSION: u32 = 1;
-const DEFAULT_GLM_PRESET_NAME: &str = "glm";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwitcherConfig {
@@ -62,24 +61,20 @@ pub struct FlagConfig {
 
 impl Default for SwitcherConfig {
     fn default() -> Self {
-        let mut presets = BTreeMap::new();
-        presets.insert(DEFAULT_GLM_PRESET_NAME.to_owned(), default_glm_preset());
         Self {
             version: CURRENT_CONFIG_VERSION,
             active_preset: None,
-            presets,
+            presets: BTreeMap::new(),
         }
     }
 }
 
-pub fn load_or_init(paths: &AppPaths) -> Result<SwitcherConfig> {
+pub fn load(paths: &AppPaths) -> Result<SwitcherConfig> {
     if !paths.config_path.exists() {
-        let cfg = SwitcherConfig::default();
-        save(paths, &cfg)?;
-        return Ok(cfg);
+        return Ok(SwitcherConfig::default());
     }
 
-    load_existing_config(&paths.config_path).map(ensure_builtin_glm_preset)
+    load_existing_config(&paths.config_path)
 }
 
 pub fn save(paths: &AppPaths, config: &SwitcherConfig) -> Result<()> {
@@ -132,42 +127,15 @@ fn load_existing_config(path: &Path) -> Result<SwitcherConfig> {
     Ok(cfg)
 }
 
-fn ensure_builtin_glm_preset(mut cfg: SwitcherConfig) -> SwitcherConfig {
-    cfg.presets
-        .entry(DEFAULT_GLM_PRESET_NAME.to_owned())
-        .or_insert_with(default_glm_preset);
-    cfg
-}
-
-fn default_glm_preset() -> Preset {
-    Preset {
-        provider: ProviderKind::Glm,
-        base_url: "https://open.bigmodel.cn/api/anthropic".to_owned(),
-        auth_token: String::new(),
-        models: ModelConfig {
-            haiku_model: "GLM-4.7".to_owned(),
-            sonnet_model: "GLM-4.7".to_owned(),
-            opus_model: "GLM-4.7".to_owned(),
-        },
-        network: None,
-        timeouts: None,
-        flags: None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn default_config_contains_glm_preset() {
+    fn default_config_starts_with_empty_presets() {
         let cfg = SwitcherConfig::default();
-        let glm = cfg
-            .presets
-            .get(DEFAULT_GLM_PRESET_NAME)
-            .expect("missing glm");
-        assert_eq!(glm.base_url, "https://open.bigmodel.cn/api/anthropic");
-        assert_eq!(glm.models.sonnet_model, "GLM-4.7");
+        assert!(cfg.presets.is_empty());
+        assert!(cfg.active_preset.is_none());
     }
 
     #[test]

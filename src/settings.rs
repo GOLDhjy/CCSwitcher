@@ -181,6 +181,7 @@ mod tests {
             config_path: tmp.path().join("ccswitcher/config.json"),
             claude_home,
             settings_path: settings_path.clone(),
+            settings_local_path: tmp.path().join("claude/settings.local.json"),
         };
 
         apply_preset(&paths, &preset).expect("apply preset");
@@ -221,6 +222,7 @@ mod tests {
             config_path: tmp.path().join("ccswitcher/config.json"),
             claude_home,
             settings_path: settings_path.clone(),
+            settings_local_path: tmp.path().join("claude/settings.local.json"),
         };
 
         reset_to_official(&paths).expect("reset");
