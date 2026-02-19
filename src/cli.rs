@@ -32,6 +32,11 @@ pub enum Commands {
         /// Preset name to remove.
         preset: String,
     },
+    /// Clear model/provider env overrides and return to Claude official defaults.
+    #[command(name = "reset-official", visible_alias = "reset")]
+    ResetOfficial,
+    /// Install /switchmodel slash command template into ~/.claude/commands.
+    Install,
 }
 
 #[derive(Debug, Args)]

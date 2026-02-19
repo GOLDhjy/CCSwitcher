@@ -8,6 +8,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct AppPaths {
     pub config_path: PathBuf,
+    pub claude_home: PathBuf,
     pub settings_path: PathBuf,
 }
 
@@ -23,6 +24,7 @@ impl AppPaths {
 
         Ok(Self {
             config_path,
+            claude_home,
             settings_path,
         })
     }

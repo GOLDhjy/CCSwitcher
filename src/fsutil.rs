@@ -36,6 +36,10 @@ pub fn write_json_atomic<T: Serialize>(path: &Path, payload: &T) -> Result<()> {
     write_bytes_atomic(path, &bytes)
 }
 
+pub fn write_text_atomic(path: &Path, content: &str) -> Result<()> {
+    write_bytes_atomic(path, content.as_bytes())
+}
+
 fn write_bytes_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     ensure_directory(parent)?;

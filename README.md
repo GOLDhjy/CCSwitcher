@@ -9,6 +9,7 @@ It powers a global slash command `/switchmodel` with subcommands:
 - `use <preset>`
 - `add`
 - `remove <preset>`
+- `reset` (alias of `reset-official`)
 
 ## What it changes
 
@@ -31,9 +32,9 @@ Updated environment keys:
 
 ## Rust toolchain
 
-This project pins Rust in `rust-toolchain.toml`:
+This project tracks the latest stable Rust via `rust-toolchain.toml`:
 
-- `1.92.0`
+- `stable`
 
 ## Build
 
@@ -53,6 +54,7 @@ CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/ccswitcher-target cargo build --releas
 ccswitcher list
 ccswitcher current
 ccswitcher use glm
+ccswitcher reset-official
 
 ccswitcher add \
   --name glm-work \
@@ -70,7 +72,7 @@ ccswitcher add \
 ccswitcher remove glm-work
 ```
 
-## Install slash command
+## Install (source checkout)
 
 ```bash
 bash scripts/install.sh
@@ -79,7 +81,21 @@ bash scripts/install.sh
 This installs:
 
 - `~/.local/bin/ccswitcher`
-- `~/.claude/commands/switchmodel.md`
+- `/switchmodel` slash command template in `~/.claude/commands/switchmodel.md`
+
+## Install (one-line for others)
+
+Using Cargo + git (single shell command):
+
+```bash
+cargo install --git https://github.com/GOLDhjy/CCSwitcher.git ccswitcher --force && ccswitcher install
+```
+
+Using remote install script (single shell command):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/main/scripts/install.sh | bash
+```
 
 After that, use in Claude Code:
 
@@ -88,6 +104,7 @@ After that, use in Claude Code:
 - `/switchmodel use glm-work`
 - `/switchmodel add` (interactive question flow in chat)
 - `/switchmodel remove glm-work`
+- `/switchmodel reset`
 
 ## Security note
 

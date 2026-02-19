@@ -160,3 +160,101 @@ fn remove_active_preset_fails() {
         .failure()
         .stderr(contains("Cannot remove active preset 'team-glm'"));
 }
+
+#[test]
+fn reset_official_clears_override_env_and_active_preset() {
+    let tmp = TempDir::new().expect("tempdir");
+    let switcher_home = tmp.path().join("switcher-home");
+    let claude_home = tmp.path().join("claude-home");
+    fs::create_dir_all(&switcher_home).expect("switcher home");
+    fs::create_dir_all(&claude_home).expect("claude home");
+
+    let settings_path = claude_home.join("settings.json");
+    fs::write(
+        &settings_path,
+        r#"{
+  "env": {
+    "EXISTING_KEY": "keep"
+  },
+  "alwaysThinkingEnabled": true
+}"#,
+    )
+    .expect("seed settings");
+
+    command_with_env(&switcher_home, &claude_home)
+        .args([
+            "add",
+            "--name",
+            "team-glm",
+            "--provider",
+            "glm",
+            "--base-url",
+            "https://open.bigmodel.cn/api/anthropic",
+            "--auth-token",
+            "token-123",
+            "--haiku",
+            "GLM-4.7",
+            "--sonnet",
+            "GLM-4.7",
+            "--opus",
+            "GLM-4.7",
+        ])
+        .assert()
+        .success();
+
+    command_with_env(&switcher_home, &claude_home)
+        .args(["use", "team-glm"])
+        .assert()
+        .success();
+
+    command_with_env(&switcher_home, &claude_home)
+        .args(["reset"])
+        .assert()
+        .success()
+        .stdout(contains("Reset complete."));
+
+    command_with_env(&switcher_home, &claude_home)
+        .args(["current"])
+        .assert()
+        .success()
+        .stdout(contains("No active preset."));
+
+    let settings: Value =
+        serde_json::from_str(&fs::read_to_string(&settings_path).expect("read settings"))
+            .expect("json");
+    assert_eq!(settings["alwaysThinkingEnabled"], Value::Bool(true));
+    assert_eq!(
+        settings["env"]["EXISTING_KEY"],
+        Value::String("keep".to_owned())
+    );
+    assert_eq!(settings["env"]["ANTHROPIC_AUTH_TOKEN"], Value::Null);
+    assert_eq!(settings["env"]["ANTHROPIC_BASE_URL"], Value::Null);
+    assert_eq!(
+        settings["env"]["ANTHROPIC_DEFAULT_HAIKU_MODEL"],
+        Value::Null
+    );
+}
+
+#[test]
+fn install_writes_switchmodel_command_file() {
+    let tmp = TempDir::new().expect("tempdir");
+    let switcher_home = tmp.path().join("switcher-home");
+    let claude_home = tmp.path().join("claude-home");
+    fs::create_dir_all(&switcher_home).expect("switcher home");
+    fs::create_dir_all(&claude_home).expect("claude home");
+
+    command_with_env(&switcher_home, &claude_home)
+        .args(["install"])
+        .assert()
+        .success()
+        .stdout(contains("Installed slash command:"));
+
+    let command_file = claude_home.join("commands/switchmodel.md");
+    let body = fs::read_to_string(command_file).expect("read command");
+    assert!(
+        body.contains(
+            "argument-hint: list | current | use <preset> | add | remove <preset> | reset"
+        )
+    );
+    assert!(body.contains("ccswitcher reset-official"));
+}

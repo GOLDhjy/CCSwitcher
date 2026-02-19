@@ -1,5 +1,5 @@
 ---
-argument-hint: list | current | use <preset> | add | remove <preset>
+argument-hint: list | current | use <preset> | add | remove <preset> | reset
 description: Manage model presets and switch Claude Code provider settings
 allowed-tools: Bash, Read
 ---
@@ -14,6 +14,7 @@ Use the local `ccswitcher` binary to manage model presets.
 - `current`: run `ccswitcher current`
 - `use <preset>`: run `ccswitcher use <preset>`
 - `remove <preset>`: run `ccswitcher remove <preset>`
+- `reset`: run `ccswitcher reset-official`
 - `add`: collect values step by step, then run a single `ccswitcher add ...` command
 
 ## `add` interactive flow (required)

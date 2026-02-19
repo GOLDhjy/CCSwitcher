@@ -9,17 +9,21 @@ use crate::{
     paths::AppPaths,
 };
 
+const OVERRIDE_ENV_KEYS: [&str; 9] = [
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "API_TIMEOUT_MS",
+    "MCP_TOOL_TIMEOUT",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+    "HTTP_PROXY",
+];
+
 pub fn apply_preset(paths: &AppPaths, preset: &Preset) -> Result<()> {
     let mut root = load_settings_root(paths)?;
-    let root_obj = root
-        .as_object_mut()
-        .ok_or_else(|| AppError::invalid_json_root(&paths.settings_path))?;
-
-    let env = root_obj
-        .entry("env".to_owned())
-        .or_insert_with(|| json!({}))
-        .as_object_mut()
-        .ok_or_else(|| AppError::invalid_json_root(&paths.settings_path))?;
+    let env = ensure_env_map(paths, &mut root)?;
 
     set_env(
         env,
@@ -76,6 +80,17 @@ pub fn apply_preset(paths: &AppPaths, preset: &Preset) -> Result<()> {
     fsutil::write_json_atomic(&paths.settings_path, &root)
 }
 
+pub fn reset_to_official(paths: &AppPaths) -> Result<()> {
+    let mut root = load_settings_root(paths)?;
+    let env = ensure_env_map(paths, &mut root)?;
+    for key in OVERRIDE_ENV_KEYS {
+        env.remove(key);
+    }
+
+    fsutil::backup_if_exists(&paths.settings_path)?;
+    fsutil::write_json_atomic(&paths.settings_path, &root)
+}
+
 fn load_settings_root(paths: &AppPaths) -> Result<Value> {
     if !paths.settings_path.exists() {
         return Ok(json!({ "env": {} }));
@@ -86,6 +101,17 @@ fn load_settings_root(paths: &AppPaths) -> Result<Value> {
     let root: Value =
         serde_json::from_str(&raw).map_err(|err| AppError::json(&paths.settings_path, err))?;
     Ok(root)
+}
+
+fn ensure_env_map<'a>(paths: &AppPaths, root: &'a mut Value) -> Result<&'a mut Map<String, Value>> {
+    let root_obj = root
+        .as_object_mut()
+        .ok_or_else(|| AppError::invalid_json_root(&paths.settings_path))?;
+    root_obj
+        .entry("env".to_owned())
+        .or_insert_with(|| json!({}))
+        .as_object_mut()
+        .ok_or_else(|| AppError::invalid_json_root(&paths.settings_path))
 }
 
 fn set_env(env: &mut Map<String, Value>, key: &str, value: Option<&str>) {
@@ -153,6 +179,7 @@ mod tests {
 
         let paths = AppPaths {
             config_path: tmp.path().join("ccswitcher/config.json"),
+            claude_home,
             settings_path: settings_path.clone(),
         };
 
@@ -167,5 +194,46 @@ mod tests {
             "https://open.bigmodel.cn/api/anthropic"
         );
         assert_eq!(parsed["env"]["MCP_TOOL_TIMEOUT"], "30000");
+    }
+
+    #[test]
+    fn reset_to_official_clears_only_override_keys() {
+        let tmp = TempDir::new().expect("tempdir");
+        let claude_home = tmp.path().join("claude");
+        fs::create_dir_all(&claude_home).expect("claude home");
+        let settings_path = claude_home.join("settings.json");
+
+        fs::write(
+            &settings_path,
+            r#"{
+  "enabledPlugins": {"foo": true},
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "x",
+    "ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "GLM-4.7",
+    "EXISTING_KEY": "keep-me"
+  }
+}"#,
+        )
+        .expect("write settings");
+
+        let paths = AppPaths {
+            config_path: tmp.path().join("ccswitcher/config.json"),
+            claude_home,
+            settings_path: settings_path.clone(),
+        };
+
+        reset_to_official(&paths).expect("reset");
+        let parsed: Value =
+            serde_json::from_str(&fs::read_to_string(settings_path).expect("read")).expect("json");
+
+        assert_eq!(parsed["enabledPlugins"]["foo"], Value::Bool(true));
+        assert_eq!(
+            parsed["env"]["EXISTING_KEY"],
+            Value::String("keep-me".to_owned())
+        );
+        assert_eq!(parsed["env"]["ANTHROPIC_AUTH_TOKEN"], Value::Null);
+        assert_eq!(parsed["env"]["ANTHROPIC_BASE_URL"], Value::Null);
+        assert_eq!(parsed["env"]["ANTHROPIC_DEFAULT_SONNET_MODEL"], Value::Null);
     }
 }

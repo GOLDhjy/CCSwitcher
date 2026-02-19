@@ -20,14 +20,21 @@ pub fn run() -> Result<()> {
 
 fn run_with_cli(cli: Cli, out: &mut dyn Write) -> Result<()> {
     let paths = paths::AppPaths::resolve()?;
-    let mut cfg = config::load_or_init(&paths)?;
 
     match cli.command {
-        Commands::List => list_presets(&cfg, out),
-        Commands::Current => show_current(&cfg, out),
-        Commands::Use { preset } => use_preset(&mut cfg, &preset, &paths, out),
-        Commands::Add(args) => add_preset(&mut cfg, args, &paths, out),
-        Commands::Remove { preset } => remove_preset(&mut cfg, &preset, &paths, out),
+        Commands::Install => install_slash_command(&paths, out),
+        other => {
+            let mut cfg = config::load_or_init(&paths)?;
+            match other {
+                Commands::List => list_presets(&cfg, out),
+                Commands::Current => show_current(&cfg, out),
+                Commands::Use { preset } => use_preset(&mut cfg, &preset, &paths, out),
+                Commands::Add(args) => add_preset(&mut cfg, args, &paths, out),
+                Commands::Remove { preset } => remove_preset(&mut cfg, &preset, &paths, out),
+                Commands::ResetOfficial => reset_official(&mut cfg, &paths, out),
+                Commands::Install => unreachable!("handled above"),
+            }
+        }
     }
 }
 
@@ -139,5 +146,32 @@ fn write_preset_details(out: &mut dyn Write, name: &str, preset: &Preset) -> Res
     writeln!(out, "Haiku model: {}", preset.models.haiku_model).map_err(AppError::output)?;
     writeln!(out, "Sonnet model: {}", preset.models.sonnet_model).map_err(AppError::output)?;
     writeln!(out, "Opus model: {}", preset.models.opus_model).map_err(AppError::output)?;
+    Ok(())
+}
+
+fn reset_official(
+    cfg: &mut SwitcherConfig,
+    paths: &paths::AppPaths,
+    out: &mut dyn Write,
+) -> Result<()> {
+    settings::reset_to_official(paths)?;
+    cfg.active_preset = None;
+    config::save(paths, cfg)?;
+    writeln!(
+        out,
+        "Reset complete. Official Claude model/provider defaults will be used for new requests."
+    )
+    .map_err(AppError::output)?;
+    Ok(())
+}
+
+fn install_slash_command(paths: &paths::AppPaths, out: &mut dyn Write) -> Result<()> {
+    let command_dir = paths.claude_home.join("commands");
+    fsutil::ensure_directory(&command_dir)?;
+    let command_path = command_dir.join("switchmodel.md");
+    let template = include_str!("../templates/switchmodel.md");
+    fsutil::write_text_atomic(&command_path, template)?;
+    writeln!(out, "Installed slash command: {}", command_path.display())
+        .map_err(AppError::output)?;
     Ok(())
 }
