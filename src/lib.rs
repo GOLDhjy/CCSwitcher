@@ -241,6 +241,9 @@ fn run_interactive_menu(
     paths: &paths::AppPaths,
     out: &mut dyn Write,
 ) -> Result<()> {
+    const RESULT_START: &str = "================ Result ================";
+    const RESULT_END: &str = "============= End Result ===============";
+
     writeln!(out, "CCSwitcher interactive mode.").map_err(AppError::output)?;
     writeln!(out, "Choose an action by number, or type exit to quit.").map_err(AppError::output)?;
 
@@ -256,6 +259,14 @@ fn run_interactive_menu(
         writeln!(out, "0. exit").map_err(AppError::output)?;
 
         let action = prompt_line(out, "Select [0-7]").map(|v| v.to_ascii_lowercase())?;
+        if matches!(action.as_str(), "0" | "exit" | "quit") {
+            writeln!(out).map_err(AppError::output)?;
+            writeln!(out, "Bye.").map_err(AppError::output)?;
+            break;
+        }
+
+        writeln!(out).map_err(AppError::output)?;
+        writeln!(out, "{RESULT_START}").map_err(AppError::output)?;
         match action.as_str() {
             "1" | "list" => list_presets(cfg, out)?,
             "2" | "current" => show_current(cfg, out)?,
@@ -299,12 +310,9 @@ fn run_interactive_menu(
                 }
             }
             "7" | "install" => install_slash_command(paths, out)?,
-            "0" | "exit" | "quit" => {
-                writeln!(out, "Bye.").map_err(AppError::output)?;
-                break;
-            }
             _ => writeln!(out, "Invalid selection.").map_err(AppError::output)?,
         }
+        writeln!(out, "{RESULT_END}").map_err(AppError::output)?;
     }
 
     Ok(())

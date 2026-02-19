@@ -15,7 +15,8 @@ cleanup_tmp_dirs() {
   local dir
   for dir in "${TMP_DIRS[@]-}"; do
     [[ -n "$dir" && -d "$dir" ]] && rm -rf "$dir"
-  done
+  done || true
+  return 0
 }
 
 register_tmp_dir() {
