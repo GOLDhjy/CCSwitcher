@@ -1,61 +1,64 @@
 # CCSwitcher
 
-[中文说明](./README.zh-CN.md)
+[English README](./README.en.md)
 
-`ccswitcher` is a Rust CLI for Claude Code model preset management.
+`ccswitcher` 是一个用于管理 Claude Code 模型预设的 Rust CLI 工具。
 
-It powers a global slash command `/switchmodel` with subcommands:
+它提供全局斜杠命令 `/switchmodel`，包含以下子命令：
 
 - `list`
 - `current`
 - `use <preset>`
 - `add`
 - `remove <preset>`
-- `reset` (alias of `reset-official`)
+- `reset`（`reset-official` 的别名）
 
-By default, new installs start with an empty preset list (no built-in provider preset).
+默认新安装时预设列表为空（不带内置 provider 预设）。
 
-## What it changes
-
-- Presets are stored in `~/.claudecode-switcher/config.json`
-- Active preset is applied to `~/.claude/settings.json` under `env`
-
-Updated environment keys:
-
-- `ANTHROPIC_DEFAULT_HAIKU_MODEL`
-- `ANTHROPIC_DEFAULT_SONNET_MODEL`
-- `ANTHROPIC_DEFAULT_OPUS_MODEL`
-- `ANTHROPIC_AUTH_TOKEN`
-- `ANTHROPIC_BASE_URL`
-- `API_TIMEOUT_MS` (optional)
-- `MCP_TOOL_TIMEOUT` (optional)
-- `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` (optional)
-- `HTTP_PROXY` (optional)
-
-`settings.json` writes are atomic and create a timestamped backup.
-
-## Rust toolchain
-
-This project tracks the latest stable Rust via `rust-toolchain.toml`:
-
-- `stable`
-
-## Build
+## 安装（推荐，无需 Rust）
 
 ```bash
-cargo build --release
+curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/master/scripts/install.sh | bash
 ```
 
-If your project is on a filesystem that does not support Rust lock files, use:
+该命令会下载你平台对应的最新预编译二进制，然后安装：
+
+- `~/.local/bin/ccswitcher`
+- `~/.claude/commands/switchmodel.md`（`/switchmodel` 命令模板）
+
+安装指定版本：
 
 ```bash
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/ccswitcher-target cargo build --release
+curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/master/scripts/install.sh | bash -s -- --version v0.1.0
 ```
 
-## CLI usage
+如果你的平台没有可用二进制，可切换为源码模式：
 
 ```bash
-# no args -> interactive terminal wizard/menu
+curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/master/scripts/install.sh | bash -s -- --source
+```
+
+查看发布包：[`GitHub Releases`](https://github.com/GOLDhjy/CCSwitcher/releases)
+
+## 安装（本地源码仓库）
+
+```bash
+bash scripts/install.sh --source
+```
+
+安装完成后，可在 Claude Code 中使用：
+
+- `/switchmodel list`
+- `/switchmodel current`
+- `/switchmodel use glm-work`
+- `/switchmodel add`（在对话中交互式提问）
+- `/switchmodel remove glm-work`
+- `/switchmodel reset`
+
+## CLI 用法
+
+```bash
+# 不带参数 -> 交互式终端向导/菜单
 ccswitcher
 
 ccswitcher list
@@ -78,45 +81,44 @@ ccswitcher add \
 ccswitcher remove glm-work
 ```
 
-## Install (recommended, no Rust required)
+## 它会修改什么
+
+- 预设配置保存在 `~/.claudecode-switcher/config.json`
+- 当前预设会写入 `~/.claude/settings.json` 的 `env` 字段
+
+会更新以下环境变量：
+
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL`
+- `ANTHROPIC_DEFAULT_OPUS_MODEL`
+- `ANTHROPIC_AUTH_TOKEN`
+- `ANTHROPIC_BASE_URL`
+- `API_TIMEOUT_MS`（可选）
+- `MCP_TOOL_TIMEOUT`（可选）
+- `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`（可选）
+- `HTTP_PROXY`（可选）
+
+`settings.json` 采用原子写入，并自动创建带时间戳的备份。
+
+## Rust 工具链
+
+本项目通过 `rust-toolchain.toml` 跟踪最新稳定版 Rust：
+
+- `stable`
+
+## 构建
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/main/scripts/install.sh | bash
+cargo build --release
 ```
 
-This downloads the latest prebuilt release binary for your platform, then installs:
-
-- `~/.local/bin/ccswitcher`
-- `/switchmodel` slash command template in `~/.claude/commands/switchmodel.md`
-
-Install a specific release tag:
+如果你的项目目录所在文件系统不支持 Rust lock file，可使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/main/scripts/install.sh | bash -s -- --version v0.1.0
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/ccswitcher-target cargo build --release
 ```
 
-If binary install is unavailable for your platform, use source mode:
+## 安全说明
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/GOLDhjy/CCSwitcher/main/scripts/install.sh | bash -s -- --source
-```
-
-## Install (local source checkout)
-
-```bash
-bash scripts/install.sh --source
-```
-
-After installation, use in Claude Code:
-
-- `/switchmodel list`
-- `/switchmodel current`
-- `/switchmodel use glm-work`
-- `/switchmodel add` (interactive question flow in chat)
-- `/switchmodel remove glm-work`
-- `/switchmodel reset`
-
-## Security note
-
-Auth tokens are stored in plain text by design for this version.
-Rotate tokens if they were exposed and keep file permissions restricted.
+当前版本会以明文保存 Auth Token。
+如有泄露风险，请及时轮换 Token，并确保相关文件权限受控。
